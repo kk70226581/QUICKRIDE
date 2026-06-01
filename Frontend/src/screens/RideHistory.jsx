@@ -117,7 +117,7 @@ function RideHistory() {
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Total spent</p>
-          <p className="mt-3 text-3xl font-semibold text-emerald-700">₹ {totalSpent}</p>
+          <p className="mt-3 text-3xl font-semibold text-emerald-700">Rs {totalSpent}</p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Quick rebook</p>
@@ -265,7 +265,7 @@ export const Ride = ({ ride, onRebook }) => {
           <Clock size={13} className="-mt-[1px]" /> {formatTime(ride.createdAt)}
         </h1>
         <h1 className="text-sm flex gap-1 items-center font-semibold ">
-          <CreditCard size={13} className="-mt-[1px] text-black" />₹ {ride.fare}
+          <CreditCard size={13} className="-mt-[1px] text-black" />Rs {ride.fare}
         </h1>
         {/* </div>
         <div className="flex flex-wrap gap-2 justify-around">
