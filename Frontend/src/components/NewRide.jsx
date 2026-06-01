@@ -90,7 +90,7 @@ function NewRide({
                 classes={"flex-1"}
               />
               <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary-100 hover:bg-primary-200 transition-colors">
-                <a href={"tel:" + rideData?.user?.phone}>
+                <a href={"tel:" + rideData?.user?.phone} title="Call rider">
                   <PhoneCall size={20} strokeWidth={2} className="text-primary-600" />
                 </a>
               </div>
