@@ -1,4 +1,4 @@
-function Input({ label, type, name, placeholder, defaultValue, register, validation, error, options, disabled }) {
+function Input({ label, type, name, placeholder, defaultValue, register, validation, error, options, disabled, autoComplete }) {
   const registration = typeof register === "function" ? register(name, validation) : {};
   const baseInputClasses = "field-control w-full px-4 py-3 rounded-lg outline-none text-sm my-1 transition-all duration-200";
   const focusClasses = "focus:bg-white";
@@ -32,6 +32,7 @@ function Input({ label, type, name, placeholder, defaultValue, register, validat
           className={`${baseInputClasses} ${focusClasses} ${disabledClasses} ${errorClasses}`}
           disabled={disabled}
           defaultValue={defaultValue}
+          autoComplete={autoComplete}
         />
       )}
       {error && <p className="text-xs text-red-500 mt-1 font-medium">{error.message}</p>}
