@@ -116,13 +116,20 @@ const Vehicle = ({
     details?.crowdMultiplier > 1.15
       ? `${details.crowdMultiplier}x busy`
       : "Normal demand";
+  const chooseVehicle = () => {
+    selectedVehicle(vehicle.type);
+    setShowPanel(false);
+    showNextPanel(true);
+  };
 
   return (
     <div
-      onClick={() => {
-        selectedVehicle(vehicle.type);
-        setShowPanel(false);
-        showNextPanel(true);
+      onClick={chooseVehicle}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          chooseVehicle();
+        }
       }}
       className="surface-card group my-3 flex w-full cursor-pointer items-center justify-between overflow-hidden rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-[0_18px_42px_rgba(15,23,42,0.12)]"
       role="button"
