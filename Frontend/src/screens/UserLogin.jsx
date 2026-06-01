@@ -44,9 +44,13 @@ function UserLogin() {
   };
 
   useEffect(() => {
-    setTimeout(() => {
+    if (!responseError) return;
+
+    const timeout = setTimeout(() => {
       setResponseError("");
     }, 5000);
+
+    return () => clearTimeout(timeout);
   }, [responseError]);
 
   return (
