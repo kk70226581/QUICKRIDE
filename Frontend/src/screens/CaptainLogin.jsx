@@ -72,6 +72,7 @@ function CaptainLogin() {
               type={"email"}
               name={"email"}
               placeholder={"you@example.com"}
+              autoComplete="email"
               register={register}
               error={errors.email}
             />
@@ -79,6 +80,7 @@ function CaptainLogin() {
               label={"Password"}
               type={"password"}
               name={"password"}
+              autoComplete="current-password"
               placeholder={"••••••••"}
               register={register}
               error={errors.password}
