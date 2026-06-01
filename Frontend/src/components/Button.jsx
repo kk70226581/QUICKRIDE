@@ -19,6 +19,7 @@ function Button({
     primary: "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-[0_16px_36px_rgba(13,148,136,0.26)] hover:from-emerald-600 hover:to-teal-700 disabled:from-emerald-400 disabled:to-teal-500",
     secondary: "border border-slate-200 bg-white text-slate-900 shadow-[0_10px_26px_rgba(15,23,42,0.08)] hover:border-slate-300 hover:bg-slate-50 disabled:bg-slate-100",
     outline: "border border-emerald-500 bg-white text-emerald-700 hover:bg-emerald-50 disabled:border-emerald-300 disabled:text-emerald-400",
+    ghost: "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-950 disabled:text-slate-400",
     danger: "bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-[0_16px_32px_rgba(225,29,72,0.24)] hover:from-rose-600 hover:to-red-700 disabled:from-rose-400 disabled:to-red-500",
   };
 
