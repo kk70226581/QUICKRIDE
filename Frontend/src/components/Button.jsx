@@ -39,6 +39,7 @@ function Button({
           className={buttonClasses}
           onClick={fun}
           disabled={loading || disabled}
+          aria-busy={loading ? "true" : "false"}
         >
           {loading ? <span className="flex gap-2 items-center"><Spinner size="sm" />{loadingMessage}</span> : title}
           {!loading && icon}
