@@ -184,7 +184,7 @@ function RideDetails({
                   classes={"flex-1"}
                 />
                 <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary-100 hover:bg-primary-200 transition-colors">
-                  <a href={"tel:" + confirmedRideData?.captain?.phone}>
+                  <a href={"tel:" + confirmedRideData?.captain?.phone} title="Call captain">
                     <PhoneCall size={20} strokeWidth={2} className="text-primary-600" />
                   </a>
                 </div>
