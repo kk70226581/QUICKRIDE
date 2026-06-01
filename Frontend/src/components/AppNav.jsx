@@ -107,6 +107,7 @@ function AppNav({ overlay = false }) {
           type="button"
           onClick={logout}
           aria-label="Logout"
+          title="Logout"
           className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
         >
           <LogOut size={18} />
