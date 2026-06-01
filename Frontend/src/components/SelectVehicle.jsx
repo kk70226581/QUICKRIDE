@@ -139,6 +139,7 @@ const Vehicle = ({
         <img
           src={`/${vehicle.image}`}
           className="w-24 scale-75 mix-blend-multiply group-hover:scale-90 transition-transform"
+          alt={`${vehicle.name} ride option`}
         />
       </div>
       <div className="flex-1">
