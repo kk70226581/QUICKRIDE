@@ -796,7 +796,7 @@ function UserHomeScreen() {
                 <button
                   type="button"
                   aria-label="Use current location"
-                  title="Use current location"
+                  title={locationLoading ? "Detecting location" : "Use current location"}
                   onClick={useCurrentLocation}
                   disabled={locationLoading}
                   className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-[0_12px_26px_rgba(16,185,129,0.14)] transition hover:border-emerald-400 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-70"
