@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { ChevronRight, CircleUserRound, History, KeyRound, Menu, X } from "lucide-react";
+import { ChevronRight, CircleUserRound, History, KeyRound, Menu, Wifi, X } from "lucide-react";
 import Button from "./Button";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
@@ -64,16 +64,16 @@ function Sidebar() {
           <div className="mb-6 text-center">
             <div className="my-4 rounded-full w-24 h-24 bg-gradient-to-br from-primary-400 to-primary-600 mx-auto flex items-center justify-center shadow-lg">
               <h1 className="text-5xl font-bold text-white">
-                {newUser?.data?.fullname?.firstname[0]}
-                {newUser?.data?.fullname?.lastname[0]}
+                {newUser?.data?.fullname?.firstname?.[0] || "?"}
+                {newUser?.data?.fullname?.lastname?.[0] || ""}
               </h1>
             </div>
             <h1 className="text-center font-bold text-2xl text-dark-900 mt-4">
-              {newUser?.data?.fullname?.firstname}{" "}
-              {newUser?.data?.fullname?.lastname}
+              {newUser?.data?.fullname?.firstname || ""}{" "}
+              {newUser?.data?.fullname?.lastname || ""}
             </h1>
             <h1 className="mt-2 text-center text-dark-500 text-sm">
-              {newUser?.data?.email}
+              {newUser?.data?.email || ""}
             </h1>
           </div>
 
@@ -113,6 +113,14 @@ function Sidebar() {
               </div>
               <ChevronRight size={20} className="text-dark-400" />
             </Link>
+
+            <div className="mt-2 flex w-full items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">
+              <span className="flex items-center gap-2">
+                <Wifi size={18} />
+                {navigator.onLine ? "Online" : "Offline"}
+              </span>
+              {navigator.onLine ? <Wifi size={18} className="text-emerald-600" /> : <Wifi size={18} className="text-red-500" />}
+            </div>
           </nav>
         </div>
 

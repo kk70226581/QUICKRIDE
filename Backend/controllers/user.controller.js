@@ -4,7 +4,47 @@ const userService = require("../services/user.service");
 const { validationResult } = require("express-validator");
 const blacklistTokenModel = require("../models/blacklistToken.model");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const { verifyGoogleToken } = require("../services/google-auth.service");
+
+const splitGoogleName = (name = "") => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return {
+    firstname: parts[0] || "",
+    lastname: parts.slice(1).join(" "),
+  };
+};
+
+const normalizeOAuthProfile = (profile = {}, googleName = "") => {
+  const googleFullname = splitGoogleName(googleName);
+  const fullname = profile.fullname || {};
+
+  return {
+    fullname: {
+      firstname: (fullname.firstname || googleFullname.firstname || "").trim(),
+      lastname: (fullname.lastname || googleFullname.lastname || "").trim(),
+    },
+    phone: String(profile.phone || "").trim(),
+  };
+};
+
+const validateOAuthUserProfile = ({ fullname, phone }) => {
+  if (!fullname.firstname || fullname.firstname.length < 3) {
+    return "First name must be at least 3 characters long";
+  }
+
+  if (fullname.lastname && fullname.lastname.length < 3) {
+    return "Last name must be at least 3 characters long";
+  }
+
+  if (!/^\d{10}$/.test(phone)) {
+    return "Phone number should be of 10 digits only";
+  }
+
+  return null;
+};
+
+const createOAuthPassword = () => crypto.randomBytes(24).toString("hex");
 
 module.exports.registerUser = asyncHandler(async (req, res) => {
   const errors = validationResult(req);
@@ -186,7 +226,7 @@ module.exports.resetPassword = asyncHandler(async (req, res) => {
 });
 
 module.exports.googleSignInUser = asyncHandler(async (req, res) => {
-  const { token } = req.body;
+  const { token, profile } = req.body;
 
   if (!token) {
     return res.status(400).json({ message: "Token is required" });
@@ -198,14 +238,27 @@ module.exports.googleSignInUser = asyncHandler(async (req, res) => {
     let user = await userModel.findOne({ email });
 
     if (!user) {
-      // Create new user if doesn't exist
-      const [firstname, lastname] = name.split(" ");
+      const oauthProfile = normalizeOAuthProfile(profile, name);
+      const profileError = validateOAuthUserProfile(oauthProfile);
+
+      if (!profile || profileError) {
+        return res.status(409).json({
+          message: profileError || "Complete your profile to continue with Google signup",
+          profileRequired: true,
+          googleProfile: {
+            fullname: oauthProfile.fullname,
+            email,
+            profileImage: picture,
+          },
+        });
+      }
+
       user = await userService.createUser(
-        firstname || "User",
-        lastname || "",
+        oauthProfile.fullname.firstname,
+        oauthProfile.fullname.lastname || undefined,
         email,
-        Math.random().toString(36).substring(7), // Random password for OAuth users
-        "" // No phone for OAuth users initially
+        createOAuthPassword(),
+        oauthProfile.phone
       );
       user.emailVerified = true;
       user.profileImage = picture;

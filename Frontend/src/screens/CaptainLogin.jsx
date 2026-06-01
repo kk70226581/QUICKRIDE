@@ -56,9 +56,9 @@ function CaptainLogin() {
       roleAction="Rider login"
       accent="captain"
     >
-      <div className="mx-auto flex w-full max-w-md flex-col justify-between rounded-xl border border-dark-200 bg-white/98 p-6 shadow-card-xl sm:p-8">
+      <div className="surface-panel mx-auto flex w-full max-w-md flex-col justify-between rounded-2xl p-6 sm:p-8">
         <div>
-          <p className="mb-3 text-sm font-bold text-amber-700">Captain access</p>
+          <p className="mb-3 text-xs font-bold uppercase text-amber-700">Captain access</p>
           
           <Heading title={"Welcome Captain"} subtitle={"Login to your account to start earning"} />
 
@@ -81,14 +81,14 @@ function CaptainLogin() {
             />
             
             {responseError && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded">
+              <div className="rounded-lg border border-red-100 bg-red-50 p-3">
                 <p className="text-sm text-red-700 font-medium">{responseError}</p>
               </div>
             )}
 
             <Link 
               to="/captain/forgot-password" 
-              className="text-sm text-primary-600 hover:text-primary-700 font-semibold inline-block hover:underline"
+              className="inline-block text-sm font-bold text-amber-700 hover:text-amber-800 hover:underline"
             >
               Forgot Password?
             </Link>
@@ -104,10 +104,10 @@ function CaptainLogin() {
 
           <GoogleSignIn userType="captain" />
 
-          <div className="mt-6 pt-6 border-t-2 border-dark-200">
-            <p className="text-sm text-dark-600 text-center">
+          <div className="mt-6 border-t border-slate-200 pt-6">
+            <p className="text-center text-sm text-slate-600">
               Don&apos;t have an account?{" "}
-              <Link to="/captain/signup" className="font-bold text-primary-600 hover:text-primary-700 hover:underline">
+              <Link to="/captain/signup" className="font-bold text-amber-700 hover:text-amber-800 hover:underline">
                 Sign up here
               </Link>
             </p>

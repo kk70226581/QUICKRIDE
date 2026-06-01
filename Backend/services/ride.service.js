@@ -185,16 +185,25 @@ module.exports.startRide = async ({ rideId, otp, captain }) => {
     throw new Error("Invalid OTP");
   }
 
-  await rideModel.findOneAndUpdate(
+  const startedRide = await rideModel.findOneAndUpdate(
     {
       _id: rideId,
+      captain: captain._id,
     },
     {
       status: "ongoing",
-    }
-  );
+    },
+    { new: true }
+  )
+    .populate("user")
+    .populate("captain")
+    .select("+otp");
 
-  return ride;
+  if (!startedRide) {
+    throw new Error("Ride not found for this captain");
+  }
+
+  return startedRide;
 };
 
 module.exports.endRide = async ({ rideId, captain }) => {
@@ -223,15 +232,22 @@ module.exports.endRide = async ({ rideId, captain }) => {
     .findOneAndUpdate(
     {
       _id: rideId,
+      captain: captain._id,
+      status: { $in: ["accepted", "ongoing"] },
     },
     {
       status: "completed",
+      ...(ride.paymentMethod === "cash" ? { paymentStatus: "paid" } : {}),
     },
     { new: true }
   )
     .populate("user")
     .populate("captain")
     .select("+otp");
+
+  if (!completedRide) {
+    throw new Error("Ride could not be completed");
+  }
 
   return completedRide;
 };

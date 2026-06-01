@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout, Button, Heading, Input, GoogleSignIn } from "../components";
-import axios from "axios";
+import apiClient from "../utils/apiClient";
 import Console from "../utils/console";
 import { getApiErrorMessage } from "../utils/apiError";
 
@@ -14,7 +14,9 @@ function UserSignup() {
     handleSubmit,
     register,
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    mode: "onTouched",
+  });
 
   const navigation = useNavigate();
 
@@ -31,10 +33,7 @@ function UserSignup() {
 
     try {
       setLoading(true);
-      const response = await axios.post(
-        `${import.meta.env.VITE_SERVER_URL}/user/register`,
-        userData
-      );
+      const response = await apiClient.post("/user/register", userData);
       Console.log(response);
       localStorage.setItem("token", response.data.token);
       navigation("/home");

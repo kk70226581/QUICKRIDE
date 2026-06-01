@@ -5,7 +5,70 @@ const { validationResult } = require("express-validator");
 const blacklistTokenModel = require("../models/blacklistToken.model");
 const jwt = require("jsonwebtoken");
 const rideModel = require("../models/ride.model");
+const crypto = require("crypto");
 const { verifyGoogleToken } = require("../services/google-auth.service");
+
+const splitGoogleName = (name = "") => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return {
+    firstname: parts[0] || "",
+    lastname: parts.slice(1).join(" "),
+  };
+};
+
+const normalizeOAuthProfile = (profile = {}, googleName = "") => {
+  const googleFullname = splitGoogleName(googleName);
+  const fullname = profile.fullname || {};
+  const vehicle = profile.vehicle || {};
+
+  return {
+    fullname: {
+      firstname: (fullname.firstname || googleFullname.firstname || "").trim(),
+      lastname: (fullname.lastname || googleFullname.lastname || "").trim(),
+    },
+    phone: String(profile.phone || "").trim(),
+    vehicle: {
+      color: String(vehicle.color || "").trim(),
+      number: String(vehicle.number || "").trim().toUpperCase(),
+      capacity: Number(vehicle.capacity),
+      type: String(vehicle.type || "").trim().toLowerCase(),
+    },
+  };
+};
+
+const validateOAuthCaptainProfile = ({ fullname, phone, vehicle }) => {
+  if (!fullname.firstname || fullname.firstname.length < 3) {
+    return "First name must be at least 3 characters long";
+  }
+
+  if (fullname.lastname && fullname.lastname.length < 2) {
+    return "Last name must be at least 2 characters long";
+  }
+
+  if (!/^\d{10}$/.test(phone)) {
+    return "Phone Number should be of 10 characters only";
+  }
+
+  if (!vehicle.color || vehicle.color.length < 3) {
+    return "Vehicle color must be at least 3 characters long";
+  }
+
+  if (!vehicle.number || vehicle.number.length < 3) {
+    return "Vehicle number must be at least 3 characters long";
+  }
+
+  if (!Number.isInteger(vehicle.capacity) || vehicle.capacity < 1 || vehicle.capacity > 8) {
+    return "Vehicle capacity must be between 1 and 8";
+  }
+
+  if (!["car", "bike", "auto"].includes(vehicle.type)) {
+    return "Vehicle type must be car, bike, or auto";
+  }
+
+  return null;
+};
+
+const createOAuthPassword = () => crypto.randomBytes(24).toString("hex");
 
 module.exports.registerCaptain = asyncHandler(async (req, res) => {
   const errors = validationResult(req);
@@ -218,7 +281,7 @@ module.exports.resetPassword = asyncHandler(async (req, res) => {
 });
 
 module.exports.googleSignInCaptain = asyncHandler(async (req, res) => {
-  const { token } = req.body;
+  const { token, profile } = req.body;
 
   if (!token) {
     return res.status(400).json({ message: "Token is required" });
@@ -230,18 +293,31 @@ module.exports.googleSignInCaptain = asyncHandler(async (req, res) => {
     let captain = await captainModel.findOne({ email });
 
     if (!captain) {
-      // Create new captain if doesn't exist
-      const [firstname, lastname] = name.split(" ");
+      const oauthProfile = normalizeOAuthProfile(profile, name);
+      const profileError = validateOAuthCaptainProfile(oauthProfile);
+
+      if (!profile || profileError) {
+        return res.status(409).json({
+          message: profileError || "Complete your captain profile to continue with Google signup",
+          profileRequired: true,
+          googleProfile: {
+            fullname: oauthProfile.fullname,
+            email,
+            profileImage: picture,
+          },
+        });
+      }
+
       captain = await captainService.createCaptain(
-        firstname || "Captain",
-        lastname || "",
+        oauthProfile.fullname.firstname,
+        oauthProfile.fullname.lastname || undefined,
         email,
-        Math.random().toString(36).substring(7), // Random password for OAuth captains
-        "0000000000",
-        "white",
-        `GOOG${Date.now().toString().slice(-6)}`,
-        4, // Default capacity
-        "car"
+        createOAuthPassword(),
+        oauthProfile.phone,
+        oauthProfile.vehicle.color,
+        oauthProfile.vehicle.number,
+        oauthProfile.vehicle.capacity,
+        oauthProfile.vehicle.type
       );
       captain.emailVerified = true;
       captain.profileImage = picture;

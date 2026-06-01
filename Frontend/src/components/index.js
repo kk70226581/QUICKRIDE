@@ -3,6 +3,7 @@ import AppNav from "./AppNav";
 import AuthLayout from "./AuthLayout";
 import Button from "./Button";
 import Card from "./Card";
+import FavoriteRoutes from "./FavoriteRoutes";
 import GoogleSignIn from "./GoogleSignIn";
 import Heading from "./Heading";
 import Input from "./Input";
@@ -20,6 +21,7 @@ export {
   AuthLayout,
   Button,
   Card,
+  FavoriteRoutes,
   GoogleSignIn,
   Heading,
   Input,

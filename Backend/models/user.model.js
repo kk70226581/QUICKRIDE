@@ -39,6 +39,9 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    profileImage: {
+      type: String,
+    },
     rides: [
       {
         type: mongoose.Schema.Types.ObjectId,

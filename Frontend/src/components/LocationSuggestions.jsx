@@ -1,18 +1,6 @@
 import { MapPin } from "lucide-react";
 import Console from "../utils/console";
 
-const locationSuggestions = [
-  { name: "Central Park", location: "New York, NY, USA" },
-  { name: "Eiffel Tower", location: "Paris, France" },
-  { name: "Marina Bay Sands", location: "Singapore" },
-  { name: "Burj Khalifa", location: "Dubai, UAE" },
-  { name: "Sydney Opera House", location: "Sydney, Australia" },
-  { name: "Golden Gate Bridge", location: "San Francisco, CA, USA" },
-  { name: "Taj Mahal", location: "Agra, India" },
-  { name: "Great Wall", location: "Beijing, China" },
-  { name: "Niagara Falls", location: "Ontario, Canada" },
-  { name: "Colosseum", location: "Rome, Italy" },
-];
 function LocationSuggestions({
   suggestions = [],
   setSuggestions,
@@ -21,7 +9,7 @@ function LocationSuggestions({
   input,
 }) {
   return (
-    <div>
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white/90 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
       {suggestions.map((suggestion, index) => (
         <div
           onClick={() => {
@@ -36,13 +24,14 @@ function LocationSuggestions({
             }
           }}
           key={index}
-          className="cursor-pointer flex items-center gap-2 border-b-2 last:border-b-0 py-3 border-gray-200"
+          className="cursor-pointer flex items-start gap-3 border-b border-slate-100 px-3 py-3 last:border-b-0 transition hover:bg-emerald-50/70"
         >
-          <div className="bg-gray-100 p-2 rounded-full">
-            <MapPin size={20} />
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-700">
+            <MapPin size={18} />
           </div>
-          <div>
-            <h2 className="text-sm font-semibold">{suggestion}</h2>
+          <div className="min-w-0 pt-0.5">
+            <h2 className="line-clamp-2 text-sm font-bold leading-5 text-slate-900">{suggestion}</h2>
+            <p className="mt-0.5 text-xs font-medium text-slate-500">Tap to use this location</p>
           </div>
         </div>
       ))}

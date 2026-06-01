@@ -398,7 +398,8 @@ module.exports.startRide = async (req, res) => {
 
     return res.status(200).json(ride);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    const statusCode = /not found|not accepted|invalid otp/i.test(err.message) ? 400 : 500;
+    return res.status(statusCode).json({ message: err.message });
   }
 };
 
@@ -420,7 +421,8 @@ module.exports.endRide = async (req, res) => {
 
     return res.status(200).json(ride);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    const statusCode = /not found|cannot be ended|could not be completed/i.test(err.message) ? 400 : 500;
+    return res.status(statusCode).json({ message: err.message });
   }
 };
 

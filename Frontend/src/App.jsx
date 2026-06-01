@@ -1,112 +1,114 @@
+import { lazy, Suspense, useEffect, useContext, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import {
-  GetStarted,
-  UserLogin,
-  CaptainLogin,
-  UserHomeScreen,
-  CaptainHomeScreen,
-  UserProtectedWrapper,
-  CaptainProtectedWrapper,
-  UserSignup,
-  CaptainSignup,
-  RideHistory,
-  UserEditProfile,
-  CaptainEditProfile,
-  Error,
-  ChatScreen,
-  VerifyEmail,
-  ResetPassword,
-  ForgotPassword
-} from "./screens/";
 import { logger } from "./utils/logger";
 import { SocketDataContext } from "./contexts/SocketContext";
-import { useEffect, useContext } from "react";
 import { ChevronLeft, Trash2 } from "lucide-react";
+import Loading from "./screens/Loading";
+
+const GetStarted = lazy(() => import("./screens/GetStarted"));
+const UserLogin = lazy(() => import("./screens/UserLogin"));
+const CaptainLogin = lazy(() => import("./screens/CaptainLogin"));
+const UserHomeScreen = lazy(() => import("./screens/UserHomeScreen"));
+const CaptainHomeScreen = lazy(() => import("./screens/CaptainHomeScreen"));
+const UserProtectedWrapper = lazy(() => import("./screens/UserProtectedWrapper"));
+const CaptainProtectedWrapper = lazy(() => import("./screens/CaptainProtectedWrapper"));
+const UserSignup = lazy(() => import("./screens/UserSignup"));
+const CaptainSignup = lazy(() => import("./screens/CaptainSignup"));
+const RideHistory = lazy(() => import("./screens/RideHistory"));
+const UserEditProfile = lazy(() => import("./screens/UserEditProfile"));
+const CaptainEditProfile = lazy(() => import("./screens/CaptainEditProfile"));
+const ErrorScreen = lazy(() => import("./screens/Error"));
+const ChatScreen = lazy(() => import("./screens/ChatScreen"));
+const VerifyEmailScreen = lazy(() => import("./screens/VerifyEmail"));
+const ResetPasswordScreen = lazy(() => import("./screens/ResetPassword"));
+const ForgotPasswordScreen = lazy(() => import("./screens/ForgotPassword"));
 
 function App() {
-  return (
-    <div className="app-shell w-full min-h-dvh bg-slate-50">
-      <div className="relative w-full h-dvh bg-white overflow-x-hidden overflow-y-auto">
-        {/* Force Reset Button to clear data */}
-        <div className="absolute top-28 -right-11 opacity-35 hover:opacity-100 z-50 flex items-center p-1 pl-0 gap-1 bg-white/95 border border-r-0 border-slate-200 shadow-lg hover:-translate-x-11 rounded-l-md transition-all duration-300">
-          <ChevronLeft />
-          <button aria-label="Reset local app data" className="flex justify-center items-center w-10 h-10 rounded-md border border-red-200 bg-red-50 text-red-600" onClick={() => {
-            alert("This will clear all your data and log you out to fix the app in case it got corrupted. Please confirm to proceed.");
-            const confirmation = confirm("Are you sure you want to reset the app?")
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-            if (confirmation === true) {
-              localStorage.clear();
-              window.location.reload();
-            }
-          }}>
-            <Trash2 strokeWidth={1.8} width={18} />
-          </button>
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  return (
+    <div className="app-shell min-h-dvh w-full">
+      <div className="relative h-dvh w-full overflow-x-hidden overflow-y-auto bg-transparent">
+        <div className="absolute right-4 top-24 z-50 rounded-full border border-slate-200 bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow-lg backdrop-blur">
+          {isOnline ? "Online" : "Offline"}
         </div>
 
         <BrowserRouter>
           <LoggingWrapper />
-          <Routes>
-            <Route path="/" element={<GetStarted />} />
-            <Route
-              path="/home"
-              element={
-                <UserProtectedWrapper>
-                  <UserHomeScreen />
-                </UserProtectedWrapper>
-              }
-            />
-            <Route path="/login" element={<UserLogin />} />
-            <Route path="/signup" element={<UserSignup />} />
-            <Route
-              path="/user/edit-profile"
-              element={
-                <UserProtectedWrapper>
-                  <UserEditProfile />
-                </UserProtectedWrapper>
-              }
-            />
-            <Route
-              path="/user/rides"
-              element={
-                <UserProtectedWrapper>
-                  <RideHistory />
-                </UserProtectedWrapper>
-              }
-            />
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route path="/" element={<GetStarted />} />
+              <Route
+                path="/home"
+                element={
+                  <UserProtectedWrapper>
+                    <UserHomeScreen />
+                  </UserProtectedWrapper>
+                }
+              />
+              <Route path="/login" element={<UserLogin />} />
+              <Route path="/signup" element={<UserSignup />} />
+              <Route
+                path="/user/edit-profile"
+                element={
+                  <UserProtectedWrapper>
+                    <UserEditProfile />
+                  </UserProtectedWrapper>
+                }
+              />
+              <Route
+                path="/user/rides"
+                element={
+                  <UserProtectedWrapper>
+                    <RideHistory />
+                  </UserProtectedWrapper>
+                }
+              />
 
-            <Route
-              path="/captain/home"
-              element={
-                <CaptainProtectedWrapper>
-                  <CaptainHomeScreen />
-                </CaptainProtectedWrapper>
-              }
-            />
-            <Route path="/captain/login" element={<CaptainLogin />} />
-            <Route path="/captain/signup" element={<CaptainSignup />} />
-            <Route
-              path="/captain/edit-profile"
-              element={
-                <CaptainProtectedWrapper>
-                  <CaptainEditProfile />
-                </CaptainProtectedWrapper>
-              }
-            />
-            <Route
-              path="/captain/rides"
-              element={
-                <CaptainProtectedWrapper>
-                  <RideHistory />
-                </CaptainProtectedWrapper>
-              }
-            />
-            <Route path="/:userType/chat/:rideId" element={<ChatScreen />} />
-            <Route path="/:userType/verify-email/" element={<VerifyEmail />} />
-            <Route path="/:userType/forgot-password/" element={<ForgotPassword />} />
-            <Route path="/:userType/reset-password/" element={<ResetPassword />} />
-
-            <Route path="*" element={<Error />} />
-          </Routes>
+              <Route
+                path="/captain/home"
+                element={
+                  <CaptainProtectedWrapper>
+                    <CaptainHomeScreen />
+                  </CaptainProtectedWrapper>
+                }
+              />
+              <Route path="/captain/login" element={<CaptainLogin />} />
+              <Route path="/captain/signup" element={<CaptainSignup />} />
+              <Route
+                path="/captain/edit-profile"
+                element={
+                  <CaptainProtectedWrapper>
+                    <CaptainEditProfile />
+                  </CaptainProtectedWrapper>
+                }
+              />
+              <Route
+                path="/captain/rides"
+                element={
+                  <CaptainProtectedWrapper>
+                    <RideHistory />
+                  </CaptainProtectedWrapper>
+                }
+              />
+              <Route path="/:userType/chat/:rideId" element={<ChatScreen />} />
+              <Route path="/:userType/verify-email/" element={<VerifyEmailScreen />} />
+              <Route path="/:userType/forgot-password/" element={<ForgotPasswordScreen />} />
+              <Route path="/:userType/reset-password/" element={<ResetPasswordScreen />} />
+              <Route path="*" element={<ErrorScreen />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </div>
     </div>

@@ -1,4 +1,5 @@
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import map from "/map.png";
 import {
@@ -7,13 +8,14 @@ import {
   SelectVehicle,
   RideDetails,
   AppNav,
+  FavoriteRoutes,
 } from "../components";
 import axios from "axios";
 import debounce from "lodash.debounce";
 import { SocketDataContext } from "../contexts/SocketContext";
 import Console from "../utils/console";
 import { getApiErrorMessage } from "../utils/apiError";
-import { LocateFixed } from "lucide-react";
+import { Clock3, LocateFixed, Navigation, Shuffle, X } from "lucide-react";
 
 function UserHomeScreen() {
   const token = localStorage.getItem("token"); // this token is in use
@@ -26,6 +28,12 @@ function UserHomeScreen() {
   const [selectedInput, setSelectedInput] = useState("pickup");
   const [locationSuggestion, setLocationSuggestion] = useState([]);
   const [mapLocation, setMapLocation] = useState("");
+  const [savedRoutes, setSavedRoutes] = useState(
+    JSON.parse(localStorage.getItem("savedRoutes")) || []
+  );
+  const [recentRoutes, setRecentRoutes] = useState(
+    JSON.parse(localStorage.getItem("recentRoutes")) || []
+  );
   const [rideCreated, setRideCreated] = useState(false);
   const [tripError, setTripError] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
@@ -46,15 +54,20 @@ function UserHomeScreen() {
   const [confirmedRideData, setConfirmedRideData] = useState(null);
   const [paymentDueRideId, setPaymentDueRideId] = useState("");
   const rideTimeout = useRef(null);
+  const suggestionRequestId = useRef(0);
 
   // Panels
   const [showFindTripPanel, setShowFindTripPanel] = useState(true);
   const [showSelectVehiclePanel, setShowSelectVehiclePanel] = useState(false);
   const [showRideDetailsPanel, setShowRideDetailsPanel] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const handleLocationChange = useCallback(
-    debounce(async (inputValue, token) => {
-      if (inputValue.length >= 3) {
+  const handleLocationChange = debounce(async (inputValue, token, requestId, biasLocation) => {
+      const trimmedInput = inputValue.trim();
+      const trimmedBias = biasLocation?.trim();
+
+      if (trimmedInput.length >= 3) {
         try {
           const response = await axios.get(
             `${import.meta.env.VITE_SERVER_URL}/map/get-suggestions`,
@@ -63,26 +76,23 @@ function UserHomeScreen() {
                 token: token,
               },
               params: {
-                input: inputValue,
+                input: trimmedInput,
+                ...(trimmedBias && trimmedBias.length >= 3 ? { bias: trimmedBias } : {}),
               },
             }
           );
           Console.log(response.data);
-          setLocationSuggestion(response.data);
+          if (requestId === suggestionRequestId.current) {
+            setLocationSuggestion(response.data);
+          }
         } catch (error) {
           Console.error(error);
-          setLocationSuggestion([
-            `${inputValue}, Connaught Place, New Delhi`,
-            `${inputValue}, India Gate, New Delhi`,
-            `${inputValue}, Karol Bagh, New Delhi`,
-            `${inputValue}, Saket, New Delhi`,
-            `${inputValue}, Noida Sector 18`,
-          ]);
+          if (requestId === suggestionRequestId.current) {
+            setLocationSuggestion([]);
+          }
         }
       }
-    }, 700),
-    []
-  );
+    }, 700);
 
   const onChangeHandler = (e) => {
     setSelectedInput(e.target.id);
@@ -93,10 +103,17 @@ function UserHomeScreen() {
       setDestinationLocation(value);
     }
 
-    handleLocationChange(value, token);
+    suggestionRequestId.current += 1;
+    handleLocationChange(
+      value,
+      token,
+      suggestionRequestId.current,
+      e.target.id === "destination" ? pickupLocation : ""
+    );
 
     if (e.target.value.length < 3) {
       setLocationSuggestion([]);
+      handleLocationChange.cancel();
     }
   };
 
@@ -123,6 +140,7 @@ function UserHomeScreen() {
       setFare(response.data.fare);
       setFareDetails(response.data.fareDetails || {});
       setDistanceTime(response.data.distanceTime || null);
+      rememberRecentRoute(pickupLocation, destinationLocation);
       setTripError("");
 
       setShowFindTripPanel(false);
@@ -134,6 +152,80 @@ function UserHomeScreen() {
       setTripError(getApiErrorMessage(error, "Unable to find rides for these locations."));
       setLoading(false);
     }
+  };
+
+  const rememberRecentRoute = (pickup, destination) => {
+    const nextRoute = {
+      id: `${pickup}-${destination}`.toLowerCase(),
+      pickup,
+      destination,
+      label: `${pickup.split(",")[0]} to ${destination.split(",")[0]}`,
+      createdAt: new Date().toISOString(),
+    };
+    const nextRoutes = [
+      nextRoute,
+      ...recentRoutes.filter((route) => route.id !== nextRoute.id),
+    ].slice(0, 4);
+    setRecentRoutes(nextRoutes);
+    localStorage.setItem("recentRoutes", JSON.stringify(nextRoutes));
+  };
+
+  const handleSaveRoute = () => {
+    if (!pickupLocation || !destinationLocation) return;
+
+    const nextRoute = {
+      id: Date.now().toString(),
+      pickup: pickupLocation,
+      destination: destinationLocation,
+      label: `${pickupLocation.split(",")[0]} to ${destinationLocation.split(",")[0]}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    const exists = savedRoutes.some(
+      (route) =>
+        route.pickup === nextRoute.pickup && route.destination === nextRoute.destination
+    );
+    if (exists) return;
+
+    const nextRoutes = [nextRoute, ...savedRoutes].slice(0, 6);
+    setSavedRoutes(nextRoutes);
+    localStorage.setItem("savedRoutes", JSON.stringify(nextRoutes));
+  };
+
+  const handleSelectSavedRoute = (route) => {
+    setPickupLocation(route.pickup);
+    setDestinationLocation(route.destination);
+    setSelectedInput("pickup");
+    setShowFindTripPanel(true);
+    setShowSelectVehiclePanel(false);
+    setShowRideDetailsPanel(false);
+    navigate(`/home?pickup=${encodeURIComponent(route.pickup)}&destination=${encodeURIComponent(route.destination)}`);
+  };
+
+  const handleSwapLocations = () => {
+    setPickupLocation(destinationLocation);
+    setDestinationLocation(pickupLocation);
+    setSelectedInput("destination");
+    setTripError("");
+  };
+
+  const handleClearTripInputs = () => {
+    setPickupLocation("");
+    setDestinationLocation("");
+    setLocationSuggestion([]);
+    setTripError("");
+    setMapLocation("");
+  };
+
+  const handleRemoveSavedRoute = (routeId) => {
+    const nextRoutes = savedRoutes.filter((route) => route.id !== routeId);
+    setSavedRoutes(nextRoutes);
+    localStorage.setItem("savedRoutes", JSON.stringify(nextRoutes));
+  };
+
+  const handleClearSavedRoutes = () => {
+    setSavedRoutes([]);
+    localStorage.removeItem("savedRoutes");
   };
 
   const useCurrentLocation = () => {
@@ -490,6 +582,7 @@ function UserHomeScreen() {
     };
   }, [socket, user._id]);
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     const handleRideConfirmed = (data) => {
       Console.log("Clearing Timeout", rideTimeout);
@@ -536,8 +629,24 @@ function UserHomeScreen() {
       socket.off("ride-ended", handleRideEnded);
     };
   }, [socket, pickupLocation, currentRideId, confirmedRideData, paymentMethod]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   // Get ride details
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const pickupParam = queryParams.get("pickup");
+    const destinationParam = queryParams.get("destination");
+
+    if (pickupParam) {
+      setPickupLocation(pickupParam);
+      setShowFindTripPanel(true);
+    }
+    if (destinationParam) {
+      setDestinationLocation(destinationParam);
+      setShowFindTripPanel(true);
+    }
+  }, [location.search]);
+
   useEffect(() => {
     const storedRideDetails = localStorage.getItem("rideDetails");
     const storedPanelDetails = localStorage.getItem("panelDetails");
@@ -639,11 +748,11 @@ function UserHomeScreen() {
     return () => {
       socket.off("receiveMessage");
     };
-  }, [confirmedRideData]);
+  }, [confirmedRideData, socket]);
 
   return (
     <div
-      className="relative h-dvh w-full overflow-hidden bg-dark-100"
+      className="relative h-dvh w-full overflow-hidden bg-slate-100"
       style={{ backgroundImage: `url(${map})` }}
     >
       <AppNav overlay />
@@ -654,22 +763,32 @@ function UserHomeScreen() {
         loading="lazy"
         referrerPolicy="no-referrer-when-downgrade"
       ></iframe>
+      <div className="map-scrim absolute inset-0" />
       {/* Find a trip component */}
       {showFindTripPanel && (
-        <div className="absolute inset-x-0 bottom-0 flex max-h-[68dvh] flex-col justify-start gap-4 overflow-hidden rounded-t-2xl border border-dark-200 bg-white/98 p-5 pb-4 shadow-card-xl backdrop-blur-md sm:inset-x-auto sm:bottom-auto sm:left-6 sm:top-28 sm:w-[28rem] sm:max-h-[calc(100dvh-8.5rem)] sm:rounded-xl sm:p-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-dark-900">Where to?</h1>
+        <div className="surface-panel absolute inset-x-0 bottom-0 flex max-h-[78dvh] flex-col justify-start gap-4 overflow-hidden rounded-t-[1.35rem] p-5 pb-4 sm:inset-x-auto sm:bottom-auto sm:left-6 sm:top-28 sm:w-[29rem] sm:max-h-[calc(100dvh-8.5rem)] sm:rounded-2xl sm:p-6">
+          <div>
+            <p className="text-xs font-bold uppercase text-emerald-700">QuickRide live booking</p>
+            <h1 className="mt-1 text-3xl font-bold text-slate-950">Where to?</h1>
+          </div>
+          <div className="grid grid-cols-3 gap-2 rounded-xl border border-slate-200 bg-white/80 p-2 text-center text-[11px] font-bold text-slate-600">
+            <div className="rounded-lg bg-emerald-50 px-2 py-2 text-emerald-800">Live fares</div>
+            <div className="rounded-lg bg-sky-50 px-2 py-2 text-sky-800">Route ETA</div>
+            <div className="rounded-lg bg-slate-100 px-2 py-2 text-slate-800">Safety tools</div>
+          </div>
+          <div className="soft-divider h-px" />
           <div className="flex items-start relative w-full h-fit gap-4">
             <div className="flex flex-col items-center justify-start gap-2 mt-2">
-              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 shadow-glow-primary"></div>
-              <div className="w-[2px] h-12 bg-gradient-to-b from-primary-400 to-transparent"></div>
-              <div className="w-3 h-3 rounded-sm bg-dark-800"></div>
+              <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_0_5px_rgba(16,185,129,0.12)]"></div>
+              <div className="h-12 w-[2px] bg-gradient-to-b from-emerald-400 to-slate-300"></div>
+              <div className="h-3 w-3 rounded-sm bg-slate-900"></div>
             </div>
             <div className="w-full flex-1">
               <div className="mb-3 flex gap-2">
                 <input
                   id="pickup"
                   placeholder="Pick-up location"
-                  className="min-w-0 flex-1 border-2 border-dark-200 bg-white px-4 py-3 rounded-lg outline-none text-sm shadow-card transition-all duration-200 truncate focus:border-primary-500 focus:shadow-card-lg"
+                  className="field-control min-w-0 flex-1 rounded-lg px-4 py-3 text-sm font-semibold outline-none transition-all duration-200 truncate"
                   value={pickupLocation}
                   onChange={onChangeHandler}
                   autoComplete="off"
@@ -680,7 +799,7 @@ function UserHomeScreen() {
                   title="Use current location"
                   onClick={useCurrentLocation}
                   disabled={locationLoading}
-                  className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-lg border-2 border-primary-200 bg-primary-50 text-primary-700 shadow-card transition hover:border-primary-400 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-[0_12px_26px_rgba(16,185,129,0.14)] transition hover:border-emerald-400 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   <LocateFixed size={20} className={locationLoading ? "animate-pulse" : ""} />
                 </button>
@@ -688,11 +807,31 @@ function UserHomeScreen() {
               <input
                 id="destination"
                 placeholder="Drop-off location"
-                className="w-full border-2 border-dark-200 bg-white px-4 py-3 rounded-lg outline-none text-sm shadow-card transition-all duration-200 truncate focus:border-primary-500 focus:shadow-card-lg"
+                className="field-control w-full rounded-lg px-4 py-3 text-sm font-semibold outline-none transition-all duration-200 truncate"
                 value={destinationLocation}
                 onChange={onChangeHandler}
                 autoComplete="off"
               />
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleSwapLocations}
+                  disabled={!pickupLocation || !destinationLocation}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-sm transition hover:border-emerald-300 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Shuffle size={15} />
+                  Swap
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearTripInputs}
+                  disabled={!pickupLocation && !destinationLocation}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-sm transition hover:border-red-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <X size={15} />
+                  Clear
+                </button>
+              </div>
             </div>
           </div>
           {pickupLocation.length > 2 && destinationLocation.length > 2 && (
@@ -711,6 +850,51 @@ function UserHomeScreen() {
               {tripError}
             </div>
           )}
+
+          {recentRoutes.length > 0 && (
+            <div className="rounded-xl border border-slate-200 bg-white/82 p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="inline-flex items-center gap-2 text-xs font-bold uppercase text-slate-500">
+                  <Clock3 size={14} />
+                  Recent searches
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecentRoutes([]);
+                    localStorage.removeItem("recentRoutes");
+                  }}
+                  className="text-xs font-bold text-slate-400 transition hover:text-red-600"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {recentRoutes.map((route) => (
+                  <button
+                    key={route.id}
+                    type="button"
+                    onClick={() => handleSelectSavedRoute(route)}
+                    className="inline-flex min-w-[11rem] items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-bold text-slate-700 transition hover:border-emerald-300 hover:bg-white"
+                  >
+                    <Navigation size={14} className="shrink-0 text-emerald-700" />
+                    <span className="truncate">{route.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4">
+            <FavoriteRoutes
+              routes={savedRoutes}
+              onSelect={handleSelectSavedRoute}
+              onRemove={handleRemoveSavedRoute}
+              onClear={handleClearSavedRoutes}
+              onSave={handleSaveRoute}
+              currentRoute={{ pickup: pickupLocation, destination: destinationLocation }}
+            />
+          </div>
 
           <div className="w-full min-h-0 overflow-y-auto">
             {locationSuggestion.length > 0 && (

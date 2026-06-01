@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout, Button, Heading, Input, GoogleSignIn } from "../components";
-import axios from "axios";
+import apiClient from "../utils/apiClient";
 import Console from "../utils/console";
 import { LogIn, MapPin } from "lucide-react";
 import { getApiErrorMessage } from "../utils/apiError";
@@ -15,31 +15,31 @@ function UserLogin() {
     handleSubmit,
     register,
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    mode: "onTouched",
+  });
 
   const navigation = useNavigate();
 
   const loginUser = async (data) => {
-    if (data.email.trim() !== "" && data.password.trim() !== "") {
-      try {
-        setLoading(true);
-        const response = await axios.post(
-          `${import.meta.env.VITE_SERVER_URL}/user/login`,
-          data
-        );
-        Console.log(response);
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("userData", JSON.stringify({
+    try {
+      setLoading(true);
+      const response = await apiClient.post("/user/login", data);
+      Console.log(response);
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem(
+        "userData",
+        JSON.stringify({
           type: "user",
           data: response.data.user,
-        }));
-        navigation("/home");
-      } catch (error) {
-        setResponseError(getApiErrorMessage(error));
-        Console.log(error);
-      } finally {
-        setLoading(false);
-      }
+        })
+      );
+      navigation("/home");
+    } catch (error) {
+      setResponseError(getApiErrorMessage(error));
+      Console.log(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,9 +55,11 @@ function UserLogin() {
       rolePath="/captain/login"
       roleAction="Captain login"
     >
-      <div className="mx-auto flex w-full max-w-md flex-col justify-between rounded-xl border border-dark-200 bg-white/98 p-6 shadow-card-xl sm:p-8">
+      <div className="surface-panel mx-auto flex w-full max-w-md flex-col justify-between rounded-2xl p-6 ring-1 ring-emerald-100 sm:p-8">
         <div>
-          <p className="mb-3 text-sm font-bold text-primary-700">Rider access</p>
+          <p className="mb-3 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase text-emerald-700">
+            Rider access
+          </p>
           
           <Heading title={"Welcome Back"} subtitle={"Login to your account to continue"} />
 
@@ -68,6 +70,13 @@ function UserLogin() {
               name={"email"}
               placeholder={"you@example.com"}
               register={register}
+              validation={{
+                required: "Email is required",
+                pattern: {
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                  message: "Enter a valid email address",
+                },
+              }}
               error={errors.email}
             />
             <Input
@@ -76,18 +85,25 @@ function UserLogin() {
               name={"password"}
               placeholder={"••••••••"}
               register={register}
+              validation={{
+                required: "Password is required",
+                minLength: {
+                  value: 8,
+                  message: "Password must be at least 8 characters",
+                },
+              }}
               error={errors.password}
             />
             
             {responseError && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded">
+              <div className="rounded-lg border border-red-100 bg-red-50 p-3">
                 <p className="text-sm text-red-700 font-medium">{responseError}</p>
               </div>
             )}
 
             <Link 
               to="/user/forgot-password" 
-              className="text-sm text-primary-600 hover:text-primary-700 font-semibold inline-block hover:underline"
+              className="inline-block text-sm font-bold text-emerald-700 hover:text-emerald-800 hover:underline"
             >
               Forgot Password?
             </Link>
@@ -103,10 +119,10 @@ function UserLogin() {
 
           <GoogleSignIn userType="user" />
 
-          <div className="mt-6 pt-6 border-t-2 border-dark-200">
-            <p className="text-sm text-dark-600 text-center">
+          <div className="mt-6 border-t border-slate-200 pt-6">
+            <p className="text-center text-sm text-slate-600">
               Don&apos;t have an account?{" "}
-              <Link to="/signup" className="font-bold text-primary-600 hover:text-primary-700 hover:underline">
+              <Link to="/signup" className="font-bold text-emerald-700 hover:text-emerald-800 hover:underline">
                 Sign up here
               </Link>
             </p>
