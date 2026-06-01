@@ -73,6 +73,7 @@ function UserLogin() {
               type={"email"}
               name={"email"}
               placeholder={"you@example.com"}
+              autoComplete="email"
               register={register}
               validation={{
                 required: "Email is required",
@@ -87,6 +88,7 @@ function UserLogin() {
               label={"Password"}
               type={"password"}
               name={"password"}
+              autoComplete="current-password"
               placeholder={"••••••••"}
               register={register}
               validation={{
