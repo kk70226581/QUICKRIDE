@@ -58,7 +58,7 @@ function GoogleSignIn({ userType = "user" }) {
       window.google.accounts.id.renderButton(buttonRef.current, {
         theme: "outline",
         size: "large",
-        width: 320,
+        width: Math.min(320, window.innerWidth - 48),
         locale: "en",
       });
     };
