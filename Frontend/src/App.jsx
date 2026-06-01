@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useContext, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { logger } from "./utils/logger";
 import { SocketDataContext } from "./contexts/SocketContext";
-import { ChevronLeft, Trash2 } from "lucide-react";
 import Loading from "./screens/Loading";
 
 const GetStarted = lazy(() => import("./screens/GetStarted"));
