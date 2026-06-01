@@ -30,6 +30,7 @@ function Button({
         <Link
           to={path}
           className={buttonClasses}
+          aria-disabled={disabled ? "true" : "false"}
         >
           {title} {icon}
         </Link>
