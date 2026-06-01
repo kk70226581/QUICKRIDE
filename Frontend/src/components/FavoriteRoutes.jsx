@@ -31,6 +31,7 @@ function FavoriteRoutes({ routes, onSelect, onRemove, onClear, onSave, currentRo
             variant="ghost"
             fun={onClear}
             classes="min-w-[10rem]"
+            disabled={routes.length === 0}
           />
         </div>
       </div>
