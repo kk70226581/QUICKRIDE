@@ -54,7 +54,7 @@ function FavoriteRoutes({ routes, onSelect, onRemove, onClear, onSave, currentRo
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-900 truncate">{route.label}</p>
                   <p className="text-xs text-slate-500 truncate" title={`${route.pickup} to ${route.destination}`}>
-                    {route.pickup} → {route.destination}
+                    {route.pickup} to {route.destination}
                   </p>
                 </div>
               </div>
